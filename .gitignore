@@ -1,0 +1,77 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environment
+venv/
+.env
+*.venv
+env/
+ENV/
+
+# Package management files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Logs and debugging
+*.log
+*.out
+*.err
+logs/
+debug.log
+
+# System-specific files
+.DS_Store
+Thumbs.db
+
+# VS Code and IDE settings
+.vscode/
+.idea/
+*.swp
+
+# Environment and dependencies
+environment.yml  # If using Conda, might be recreated
+*.lock  # Lock files from package managers (if applicable)
+
+# Large dataset files (check before adding)
+*.csv
+*.json
+*.h5
+*.npz
+*.pth
+*.pt
+*.onnx
+*.ckpt
+*.pkl
+instruction-data-with-preference.json
+instruct_dpo_win_rate_comparison_bert.csv
+instruct_dpo_win_rate_comparison.csv
+win_rate_comparison.csv
+
+# Experiment results
+*.ipynb_checkpoints
+*.h5
+*.weights
+*.tfevents*
+*.model
+*.pkl
+*.onnx
+
+# Training outputs
+checkpoints/
+runs/
+wandb/
+tensorboard/
+dpo-finetuned-instruct-gpt2/
+my-supervised-finetuned-gpt2/
+mydpo-finetuned-instruct/
+mydpo-finetuned-instruct-gpt2/
+
+# Temporary files
+*.tmp
+*.bak
