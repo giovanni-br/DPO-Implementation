@@ -35,15 +35,20 @@ def compute_similarity(generated, chosen, rejected, sbert_model):
 
 def evaluate_model(model, model_name, tokenizer, sbert_model, eval_pairs, device, betas, batch_size):
     win_rates = []
+    
     for beta in betas:
         correct, total = 0, 0
+        print(f"\nEvaluating {model_name} at β={beta}...\n")
+        
         for i in range(0, len(eval_pairs), batch_size):
             batch = eval_pairs[i: i + batch_size]
             batch_prompts = [ex["prompt"] for ex in batch]
             batch_chosen = [ex["chosen"] for ex in batch]
             batch_rejected = [ex["rejected"] for ex in batch]
+
             inputs = tokenizer(batch_prompts, return_tensors="pt", truncation=True, padding=True).to(device)
             max_new_tokens = 30
+            
             with torch.no_grad():
                 outputs = model.generate(
                     inputs["input_ids"],
@@ -53,15 +58,22 @@ def evaluate_model(model, model_name, tokenizer, sbert_model, eval_pairs, device
                     temperature=beta,
                     pad_token_id=tokenizer.eos_token_id
                 )
+
             batch_generated = [decode_generated_text(inputs["input_ids"][i], output_ids, tokenizer)
-                              for i, output_ids in enumerate(outputs)]
-            correct += sum(compute_similarity(generated, chosen, rejected, sbert_model) 
-                           for generated, chosen, rejected in zip(batch_generated, batch_chosen, batch_rejected))
-            total += len(batch_generated)
+                               for i, output_ids in enumerate(outputs)]
+
+            # Compare generated responses with chosen/rejected responses
+            for j, (generated, chosen, rejected) in enumerate(zip(batch_generated, batch_chosen, batch_rejected)):
+                is_correct = compute_similarity(generated, chosen, rejected, sbert_model)
+                correct += is_correct
+                total += 1
+
         win_rate = (correct / total) * 100
         win_rates.append(win_rate)
-        print(f"{model_name} | Beta={beta:.2f} => Win Rate: {win_rate:.2f}%")
+        print(f"\n{model_name} | Beta={beta:.2f} => Win Rate: {win_rate:.2f}%\n{'='*80}")
+    
     return win_rates
+
 
 def plot_results(betas, model_win_rates):
     plt.figure(figsize=(8, 5))
@@ -73,7 +85,7 @@ def plot_results(betas, model_win_rates):
     plt.legend()
     plt.show()
 
-def run_evaluation(model_paths, json_path, save_path="win_rate_comparison.csv", subset_size=500, batch_size=4):
+def run_evaluation(model_paths, json_path, save_path="win_rate_comparison.csv", subset_size=100, batch_size=4):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     betas = [0.1, 0.25, 0.5, 0.75, 1.0]
     models, tokenizer = load_models(model_paths, device)
