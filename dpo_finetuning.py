@@ -21,7 +21,6 @@ def load_dataset(dataset_path, test_size=0.2, seed=42):
          "rejected": row["rejected"]}
         for row in instruct_data
     ]
-    # Remove the "++" if it's a typo.
     full_dataset = Dataset.from_list(triplets)
     return full_dataset.train_test_split(test_size=test_size, seed=seed)
 
@@ -29,8 +28,7 @@ def load_models(policy_model_name, ref_model_name, device):
     """Loads both policy and reference models along with their tokenizer."""
     policy_model = AutoModelForCausalLM.from_pretrained(policy_model_name).to(device)
     ref_model = AutoModelForCausalLM.from_pretrained(ref_model_name).to(device)
-    
-    # Tokenizer should match the policy model
+
     tokenizer = AutoTokenizer.from_pretrained(policy_model_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token  # Set pad token to EOS token
@@ -94,13 +92,15 @@ def kl_divergence(p_logits, q_logits):
     p_probs = p_log_probs.exp()
     kl = (p_probs * (p_log_probs - q_log_probs)).sum(dim=-1)
     return kl
+
+#this code is partially based on https://allam.vercel.app/post/dpo/
 def train_dpo(
     model,
     ref_model,
     tokenizer,
     train_dataloader,
     device="cuda",
-    epochs=5,            # Set this to the desired number of epochs.
+    epochs=5,            
     beta=0.3,
     lr=2e-6,
     save_path="dpo-finetuned-model"
@@ -122,12 +122,11 @@ def train_dpo(
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     
-    # Containers for storing step-level metrics.
     step_losses = []
     step_kls = []
     global_steps = []
     
-    global_step = 0  # Counter for fine-tuning steps
+    global_step = 0
     
     for epoch in range(epochs):
         for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
@@ -153,7 +152,6 @@ def train_dpo(
             ref_preferred_logps = get_log_prob(ref_preferred_logits, prompt_preferred_ids)
             ref_dispreferred_logps = get_log_prob(ref_dispreferred_logits, prompt_dispreferred_ids)
 
-            # Compute DPO loss (and additional metrics if needed).
             loss, _, _, _, _ = calculate_dpo_loss(
                 pi_preferred_logps, pi_dispreferred_logps,
                 ref_preferred_logps, ref_dispreferred_logps,
@@ -161,7 +159,7 @@ def train_dpo(
             )
 
             # Compute KL divergence on the "preferred" logits.
-            kl_values = kl_divergence(pi_preferred_logits, ref_preferred_logits)  # shape: [batch_size, seq_len]
+            kl_values = kl_divergence(pi_preferred_logits, ref_preferred_logits) 
             avg_kl = kl_values.mean().item()  # Average over tokens and batch.
 
             loss.backward()
@@ -173,18 +171,14 @@ def train_dpo(
             step_losses.append(loss.item())
             step_kls.append(avg_kl)
 
-            # Optionally, print step-level logs occasionally:
-            # if global_step % 100 == 0:
-            #     print(f"Step {global_step}: Loss = {loss.item():.4f}, KL = {avg_kl:.4f}")
-
     model.save_pretrained(save_path)
     tokenizer.save_pretrained(save_path)
     print(f"Model saved to {save_path}")
 
-    # Return a dictionary with step-level metrics.
     metrics = {
         "step_loss": step_losses,
         "step_kl": step_kls,
         "global_steps": global_steps
     }
     return metrics
+

@@ -9,6 +9,8 @@ from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer, AdamW
 from datasets import Dataset
 
+# dataset: https://github.com/rasbt/LLMs-from-scratch/blob/main/ch07/04_preference-tuning-with-dpo
+
 def load_dataset(dataset_path, test_size=0.2, seed=42):
     """Loads dataset from JSON file and prepares text samples."""
     with open(dataset_path, "r") as f:

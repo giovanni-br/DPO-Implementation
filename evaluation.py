@@ -61,8 +61,6 @@ def evaluate_model(model, model_name, tokenizer, sbert_model, eval_pairs, device
 
             batch_generated = [decode_generated_text(inputs["input_ids"][i], output_ids, tokenizer)
                                for i, output_ids in enumerate(outputs)]
-
-            # Compare generated responses with chosen/rejected responses
             for j, (generated, chosen, rejected) in enumerate(zip(batch_generated, batch_chosen, batch_rejected)):
                 is_correct = compute_similarity(generated, chosen, rejected, sbert_model)
                 correct += is_correct
